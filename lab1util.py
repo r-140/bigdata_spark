@@ -7,12 +7,12 @@ def join_frames(flights_df: DataFrame, airports_df: DataFrame,
                 airlines_df: DataFrame = None,
                 flights_join_col: str = 'DESTINATION_AIRPORT',
                 airports_join_col: str = 'IATA_CODE', airlines_join_col: str = 'IATA_CODE',
-                join_method='inner') -> DataFrame:
+                join_mode='inner') -> DataFrame:
     join_df = flights_df.join(airports_df,
                               flights_df[flights_join_col] == airports_df[airports_join_col],
-                              join_method)
+                              join_mode)
     if airlines_df is not None:
-        join_df = join_df.join(airlines_df, flights_df['AIRLINE'] == airlines_df[airlines_join_col], join_method)
+        join_df = join_df.join(airlines_df, flights_df['AIRLINE'] == airlines_df[airlines_join_col], join_mode)
 
     return join_df
 
@@ -32,23 +32,23 @@ def find_full_airports_and_airlines_names(processed_df: DataFrame, cancelled_df:
 
 
 def add_cancelled_and_processed_flights_to_airlines(airports_and_airline_names_df: DataFrame, cancelled_df: DataFrame,
-                                                    processed_df: DataFrame) -> DataFrame:
+                                                    processed_df: DataFrame, join_mode = 'left_outer') -> DataFrame:
     return (airports_and_airline_names_df.join(cancelled_df,
                                                (airports_and_airline_names_df['AIRPORT_IATA_CODE'] ==
                                                 cancelled_df['ORIGIN_AIRPORT'])
                                                & (airports_and_airline_names_df['AIRLINE_IATA_CODE'] ==
                                                   cancelled_df['AIRLINE']),
-                                               'inner')
+                                               join_mode)
             .join(processed_df, (
             airports_and_airline_names_df['AIRPORT_IATA_CODE'] == processed_df['ORIGIN_AIRPORT'])
                   & (airports_and_airline_names_df['AIRLINE_IATA_CODE'] == processed_df['AIRLINE']),
-                  'inner')
+                  join_mode)
             .select(airports_and_airline_names_df['AIRPORT_IATA_CODE'],
                     airports_and_airline_names_df['AIRPORT'],
                     airports_and_airline_names_df['AIRLINE_IATA_CODE'],
                     airports_and_airline_names_df['AIRLINE_NAME'],
                     processed_df['PROCESSED_FLIGHTS'], cancelled_df['CANCELLED_FLIGHTS'])
-            )
+            ).fillna(0, subset=None).distinct()
 
 
 def get_regional_airport_info(df: DataFrame, airport_code='ACT') -> DataFrame:
@@ -57,9 +57,8 @@ def get_regional_airport_info(df: DataFrame, airport_code='ACT') -> DataFrame:
 
 def add_percentage_cancelled_flights(cancel_and_processed_flight_df: DataFrame) -> DataFrame:
     return cancel_and_processed_flight_df.withColumn("percentage",
-                                                     ((cancel_and_processed_flight_df['CANCELLED_FLIGHTS'] +
-                                                       cancel_and_processed_flight_df['PROCESSED_FLIGHTS']) /
-                                                      cancel_and_processed_flight_df['CANCELLED_FLIGHTS']))
+                                                     (cancel_and_processed_flight_df['CANCELLED_FLIGHTS'] /
+                                                      (cancel_and_processed_flight_df['CANCELLED_FLIGHTS'] + cancel_and_processed_flight_df['PROCESSED_FLIGHTS'])))
 
 
 def sort_by_percentage_and_airlinename(cancel_and_processed_flight_df: DataFrame) -> DataFrame:
