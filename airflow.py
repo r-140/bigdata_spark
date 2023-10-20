@@ -24,7 +24,7 @@ spark_args = {
 default_dag_args = {
     # Setting start date as yesterday starts the DAG immediately when it is
     # detected in the Cloud Storage bucket.
-    "start_date": datetime.datetime(2023, 10, 20),
+    "start_date": datetime.datetime(2023, 10, 19),
     # To email on failure or retry set 'email' arg to your email and enable
     # emailing here.
     "email_on_failure": False,
@@ -37,13 +37,13 @@ default_dag_args = {
 }
 
 with models.DAG(
-        "composer_airflow_hw",
+        "composer_airflow_hw5",
         catchup=False,
         default_args=default_dag_args,
 ) as dag:
     file_watcher = GoogleCloudStorageUploadSessionCompleteSensor(
-        task_id='file_sensor',
-        bucket="{{ var.value.bigdata-procamp-sensor }}",
+        task_id='file_sensor_hw5',
+        bucket="{{ var.value.gcs_sensor_bucket }}",
         prefix=output_file + '\\_SUCCESS',
         inactivity_period=3600,
         timeout=7200
@@ -52,8 +52,8 @@ with models.DAG(
     # Run the Hadoop wordcount example installed on the Cloud Dataproc cluster
     # master node.
     run_dataproc_hadoop = dataproc_operator.DataProcPySparkOperator(
-        task_id="run_task_hw_5",
-        region="{{ var.value.gcs_sensor_bucket }}",
+        task_id="run_task_hw5",
+        region="{{ var.value.gcs_bucket }}",
         cluster_name="procamp-cluster",
         main="hdfs://procamp-cluster-m/user/ushakovr45_gmail_com/bigdata-spark/bigdata_spark/lab1.py",
         pyfiles="hdfs://procamp-cluster-m/user/ushakovr45_gmail_com/bigdata-spark/bigdata_spark/lab1util.py",
