@@ -1,0 +1,6 @@
+{
+  "gcp_project": "bigdata-procamp-febeb7af",
+  "gcs_bucket": "bigdata-procamp-iu",
+  "gce_region": "us-east1",
+  "gcs_sensor_bucket": "bigdata-procamp-sensor"
+}
