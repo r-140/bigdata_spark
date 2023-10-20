@@ -11,7 +11,6 @@ from airflow.contrib.sensors.gcs_sensor import GoogleCloudStorageUploadSessionCo
 # for best practices
 output_file = (
         os.path.join(
-            "{{ var.value.gcs_bucket }}",
             "flights",
             datetime.datetime.now().strftime("%Y\\%m\\%d\\%H"),
         )
@@ -44,8 +43,8 @@ with models.DAG(
 ) as dag:
     file_watcher = GoogleCloudStorageUploadSessionCompleteSensor(
         task_id='file_sensor',
-        bucket="{{ var.value.gcs_bucket }}",
-        prefix=output_file + '/_SUCCESS',
+        bucket="{{ var.value.bigdata-procamp-sensor }}",
+        prefix=output_file + '\\_SUCCESS',
         inactivity_period=3600,
         timeout=7200
     )
