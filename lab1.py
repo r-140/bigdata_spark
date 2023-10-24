@@ -1,4 +1,7 @@
+import os
+
 from pyspark.sql import SparkSession, DataFrame
+import argparse
 
 from lab1util import count_destination_airports, find_max_number_of_visits_per_month, \
     gather_statistic, find_cancelled_or_processed_df, find_full_airports_and_airlines_names, \
@@ -35,25 +38,41 @@ def process_task2(flights_df: DataFrame, airports_df: DataFrame, airlines_df: Da
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--bucket", help="gcp bucket where result will be saved")
+    args = parser.parse_args()
+    if args.bucket is None:
+        raise RuntimeError("bucket must be specified")
+
+    bucket = args.bucket
     spark = SparkSession.builder.appName("spark_homework_tasks").getOrCreate()
-    airports_df = spark.read.csv('gs://bigdata-procamp-iu/airports.csv', header=True)
 
-    flights_df = (spark.read.csv('gs://bigdata-procamp-iu/flights.csv', header=True))
+    airports_path = os.path.join(bucket, "airports.csv")
+    airports_df = spark.read.csv(airports_path, header=True)
 
-    airlines_df = spark.read.csv('gs://bigdata-procamp-iu/airlines.csv', header=True).withColumnRenamed('AIRLINE', 'AIRLINE_NAME')
+    flights_path = os.path.join(bucket, "flights.csv")
+    flights_df = (spark.read.csv(flights_path, header=True))
+
+    airlines_path = os.path.join(bucket, "airlines.csv")
+    airlines_df = spark.read.csv(airlines_path, header=True).withColumnRenamed('AIRLINE', 'AIRLINE_NAME')
 
     # task1
     result_df = process_task1(flights_df, airports_df)
     result_df.show(15)
 
-    result_df.write.option("header", "true").option("delimiter", "\t").csv("gs://bigdata-procamp-iu/task1_result.tsv")
+    task1_res_path = os.path.join(bucket, "task1_result.tsv")
+    result_df.write.option("header", "true").option("delimiter", "\t").csv(task1_res_path)
 
     res_statistic = gather_statistic(result_df)
-    res_statistic.write.option("header", "true").option("delimiter", "\t").csv("gs://bigdata-procamp-iu/task1_statistic.csv")
+
+    task_stats_path = os.path.join(bucket, "task1_statistic.csv")
+    res_statistic.write.option("header", "true").option("delimiter", "\t").csv(task_stats_path)
 
     #     task 2
     number_of_flights_per_airport_and_airline = flights_df.groupby(['ORIGIN_AIRPORT', 'AIRLINE']).agg({"*": "count"})
-    number_of_flights_per_airport_and_airline.write.option("header", "true").option("delimiter", "\t").csv("gs://bigdata-procamp-iu/task_2_nr_flights.csv")
+
+    task2_path = os.path.join(bucket, "task_2_nr_flights.csv")
+    number_of_flights_per_airport_and_airline.write.option("header", "true").option("delimiter", "\t").csv(task2_path)
 
     result_df = process_task2(flights_df, airports_df, airlines_df)
     result_df.show(20)
@@ -62,5 +81,7 @@ if __name__ == '__main__':
 
     regional_airport_info_df.show()
 
-    result_df.coalesce(1).write.format('json').save('gs://bigdata-procamp-iu/task_2_result.json')
-    regional_airport_info_df.write.option("header", "true").option("delimiter", "\t").csv("gs://bigdata-procamp-iu/task_2_regional.csv")
+    task2_res_path = os.path.join(bucket, "task_2_regional.csv")
+    result_df.coalesce(1).write.format('json').save(task2_res_path)
+    reg_airport_res_path = os.path.join(bucket, "task_2_result.json")
+    regional_airport_info_df.write.option("header", "true").option("delimiter", "\t").csv(reg_airport_res_path)
