@@ -81,7 +81,8 @@ if __name__ == '__main__':
 
     regional_airport_info_df.show()
 
-    task2_res_path = os.path.join(bucket, "task_2_regional.csv")
+    task2_res_path = os.path.join(bucket, "task_2_result.json")
     result_df.coalesce(1).write.format('json').save(task2_res_path)
-    reg_airport_res_path = os.path.join(bucket, "task_2_result.json")
+
+    reg_airport_res_path = os.path.join(bucket, "task_2_regional.csv")
     regional_airport_info_df.write.option("header", "true").option("delimiter", "\t").csv(reg_airport_res_path)
